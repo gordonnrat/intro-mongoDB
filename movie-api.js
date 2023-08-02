@@ -8,6 +8,7 @@ const envDb = `${process.env.dbName}`
 const envInventory = `${process.env.dbCollectionName}`
 
 app.use(cors())
+app.use(express.json())
 
 const uri = `mongodb+srv://${process.env.dbUserName}:${process.env.dbPassword}@${process.env.dbCluster}.${process.env.dbMongold}.mongodb.net/${process.env.dbName}?retryWrites=true&w=majority`;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -171,6 +172,45 @@ app.route('/insert')
     await client.close();
   }
  })
+
+ app.route('/edit')
+  .put(async (req, res) => {
+    let error = null;
+    let result = [];
+    try {
+      await client.connect();
+      const collection = client.db(envDb).collection(envInventory);
+
+
+
+      result = await collection.updateOne({
+        title: req.body.title
+      }, {
+        $set: {
+          title: req.body.newTitle
+        }
+      })
+      
+      if (result.modifiedCount === 0) {
+        throw new Error("Could not find record to update in database")
+      }
+      console.log(result)
+
+    }
+    catch (e) {
+      console.dir(e);
+      error = e;
+    }
+    finally {
+      await client.close();
+    }
+
+    if(error === null) {
+      res.sendStatus(200);
+    } else {
+      res.status(500).send("Failure");
+    }
+  })
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`)
